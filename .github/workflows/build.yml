@@ -1,0 +1,82 @@
+name: Build LineageOS 17.1 for polaris
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Manual build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout control repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          df -h
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
+            git git-lfs gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev \
+            lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev \
+            libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool \
+            squashfs-tools xsltproc zip zlib1g-dev
+
+      - name: Install repo
+        run: |
+          mkdir -p "$HOME/bin"
+          curl https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
+          chmod a+x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Initialize LineageOS 17.1
+        run: |
+          mkdir -p android
+          cd android
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1
+
+      - name: Add local manifest
+        run: |
+          mkdir -p android/.repo/local_manifests
+          cp .repo/local_manifests/polaris.xml android/.repo/local_manifests/polaris.xml
+
+      - name: Sync source
+        run: |
+          cd android
+          repo sync -c --force-sync --no-clone-bundle --no-tags -j$(nproc --all)
+
+      - name: Check polaris source tree
+        run: |
+          cp scripts/check_polaris_17_1_tree.sh android/check_polaris_17_1_tree.sh
+          cd android
+          bash check_polaris_17_1_tree.sh
+
+      - name: Build
+        run: |
+          cd android
+          source build/envsetup.sh
+          brunch polaris
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lineage-17.1-polaris
+          path: |
+            android/out/target/product/polaris/*.zip
+            android/out/target/product/polaris/recovery*.img
+            android/out/target/product/polaris/boot*.img
