@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Xiaomi MIX 2S / polaris device tree for LineageOS 17.1 -->
+  <project
+      name="LineageOS/android_device_xiaomi_polaris"
+      path="device/xiaomi/polaris"
+      remote="github"
+      revision="lineage-17.1" />
+
+  <!-- Qualcomm SDM845 kernel source for LineageOS 17.1 -->
+  <project
+      name="LineageOS/android_kernel_xiaomi_sdm845"
+      path="kernel/xiaomi/sdm845"
+      remote="github"
+      revision="lineage-17.1" />
+</manifest>
